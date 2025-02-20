@@ -1,4 +1,4 @@
-# appleJuice Server für Home Assistant
+# appleJuice Server Integration für Home Assistant
 
 appleJuice Server Integration für Home Assistant.
 

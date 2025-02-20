@@ -159,7 +159,7 @@ SENSORS_SERVER: tuple[AppleJuiceServerSensorDescription, ...] = [
     AppleJuiceServerSensorDescription(
         key="sended_searchmessages",
         name="Sended Search Messages",
-        icon="mdi:message-search",
+        icon="mdi:comment-search",
         state_class=SensorStateClass.TOTAL,
         entity_category=EntityCategory.DIAGNOSTIC,
         subscriptions=[("sended_searchmessages")],
@@ -213,7 +213,7 @@ SENSORS_SERVER: tuple[AppleJuiceServerSensorDescription, ...] = [
     AppleJuiceServerSensorDescription(
         key="open_sockettasks",
         name="Open Socket Tasks",
-        icon="mdi:socket",
+        icon="mdi:transit-connection-variant",
         state_class=SensorStateClass.TOTAL,
         entity_category=EntityCategory.DIAGNOSTIC,
         subscriptions=[("open_sockettasks")],
