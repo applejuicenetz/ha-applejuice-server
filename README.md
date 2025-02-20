@@ -34,6 +34,17 @@ Diese Integration kannst du nur verwenden, wenn du einen appleJuice Server betre
 
 10. Gib `Host/IP`, `Web-Port`, `Username` und `Passwort` ein und klicke auf `OK`
 
+## debugging
+
+in der `configuration.yaml` kannst du das Logging-Level für die `appleJuice Server` Integration anpassen:
+
+```yaml
+logger:
+  default: warning
+  logs:
+    custom_components.applejuice_server: debug
+```
+
 ## Screenshot
 
 ![](./docs/integration_screenshot_server.png)
