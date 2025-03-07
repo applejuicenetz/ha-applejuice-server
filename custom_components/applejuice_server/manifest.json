@@ -1,15 +1,15 @@
 {
-  "domain": "applejuice_server",
-  "name": "appleJuice Server",
-  "version": "1.0.0",
-  "iot_class": "local_polling",
-  "codeowners": [
-    "@red171"
-  ],
-  "loggers": [
-    "applejuice_server"
-  ],
-  "documentation": "https://github.com/applejuicenetz/ha-applejuice-server",
-  "issue_tracker": "https://github.com/applejuicenetz/ha-applejuice-server/issues",
-  "config_flow": true
-}
+    "domain": "applejuice_server",
+    "name": "appleJuice Server",
+    "codeowners": [
+      "@red171"
+    ],
+    "config_flow": true,
+    "documentation": "https://github.com/applejuicenetz/ha-applejuice-server",
+    "iot_class": "local_polling",
+    "issue_tracker": "https://github.com/applejuicenetz/ha-applejuice-server/issues",
+    "loggers": [
+      "applejuice_server"
+    ],
+    "version": "1.1.0"
+  }

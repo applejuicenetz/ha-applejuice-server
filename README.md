@@ -1,14 +1,16 @@
 # appleJuice Server Integration für Home Assistant
 
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://github.com/hacs/integration)
+
 appleJuice Server Integration für Home Assistant.
 
 # ❗ Achtung ❗
 
 Diese Integration kannst du nur verwenden, wenn du einen appleJuice Server betreibst.
 
-![install_badge](https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=integration%20usage&suffix=%20installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.applejuice_server.total)
+[![](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=applejuicenetz&repository=ha-applejuice-server&category=integration)
 
-## Installation
+## manuelle Installation
 
 1. Öffnen [HACS](https://hacs.xyz) in Home Assistant
 

@@ -1,5 +1,5 @@
 {
   "name": "appleJuice Server",
   "render_readme": true,
-  "iot_class": "local_polling"
+  "homeassistant": "2024.12.0"
 }
