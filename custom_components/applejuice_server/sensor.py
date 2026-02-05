@@ -1,7 +1,6 @@
 import logging
 from dataclasses import dataclass
 from collections.abc import Callable
-from datetime import datetime
 
 from homeassistant.const import (
     EntityCategory,
@@ -70,9 +69,10 @@ SENSORS_SERVER: tuple[AppleJuiceServerSensorDescription, ...] = [
         name="File Size",
         icon="mdi:file-chart",
         state_class=SensorStateClass.TOTAL,
-        unit=UnitOfInformation.TERABYTES,
+        device_class=SensorDeviceClass.DATA_SIZE,
+        unit=UnitOfInformation.BYTES,
         subscriptions=[("filesize")],
-        value_fn=lambda sensor: round(sensor.coordinator.data.get("filesize") / (1024 ** 4), 2),
+        value_fn=lambda sensor: sensor.coordinator.data.get("filesize"),
     ),
     AppleJuiceServerSensorDescription(
         key="open_connections",
@@ -88,8 +88,8 @@ SENSORS_SERVER: tuple[AppleJuiceServerSensorDescription, ...] = [
         name="Memory Used",
         icon="mdi:memory",
         state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorStateClass.TOTAL,
-        unit=UnitOfInformation.KILOBYTES,
+        device_class=SensorDeviceClass.DATA_SIZE,
+        unit=UnitOfInformation.BYTES,
         entity_category=EntityCategory.DIAGNOSTIC,
         subscriptions=[("memory_used")],
         value_fn=lambda sensor: sensor.coordinator.data.get("memory_used"),
@@ -99,8 +99,8 @@ SENSORS_SERVER: tuple[AppleJuiceServerSensorDescription, ...] = [
         name="Memory Free",
         icon="mdi:memory",
         state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorStateClass.TOTAL,
-        unit=UnitOfInformation.KILOBYTES,
+        device_class=SensorDeviceClass.DATA_SIZE,
+        unit=UnitOfInformation.BYTES,
         entity_category=EntityCategory.DIAGNOSTIC,
         subscriptions=[("memory_free")],
         value_fn=lambda sensor: sensor.coordinator.data.get("memory_free"),
@@ -110,8 +110,8 @@ SENSORS_SERVER: tuple[AppleJuiceServerSensorDescription, ...] = [
         name="Memory Max",
         icon="mdi:memory",
         state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorStateClass.TOTAL,
-        unit=UnitOfInformation.KILOBYTES,
+        device_class=SensorDeviceClass.DATA_SIZE,
+        unit=UnitOfInformation.BYTES,
         entity_category=EntityCategory.DIAGNOSTIC,
         subscriptions=[("memory_max")],
         value_fn=lambda sensor: sensor.coordinator.data.get("memory_max"),
@@ -122,10 +122,10 @@ SENSORS_SERVER: tuple[AppleJuiceServerSensorDescription, ...] = [
         icon="mdi:upload-network",
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DATA_RATE,
-        unit=UnitOfDataRate.KILOBYTES_PER_SECOND,
+        unit=UnitOfDataRate.BYTES_PER_SECOND,
         entity_category=EntityCategory.DIAGNOSTIC,
         subscriptions=[("upspeed_last_10_sec")],
-        value_fn=lambda sensor: round(sensor.coordinator.data.get("upspeed_last_10_sec"), 4),
+        value_fn=lambda sensor: sensor.coordinator.data.get("upspeed_last_10_sec"),
     ),
     AppleJuiceServerSensorDescription(
         key="downspeed_last_10_sec",
@@ -133,10 +133,10 @@ SENSORS_SERVER: tuple[AppleJuiceServerSensorDescription, ...] = [
         icon="mdi:download-network",
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DATA_RATE,
-        unit=UnitOfDataRate.KILOBYTES_PER_SECOND,
+        unit=UnitOfDataRate.BYTES_PER_SECOND,
         entity_category=EntityCategory.DIAGNOSTIC,
         subscriptions=[("downspeed_last_10_sec")],
-        value_fn=lambda sensor: round(sensor.coordinator.data.get("downspeed_last_10_sec"), 4),
+        value_fn=lambda sensor: sensor.coordinator.data.get("downspeed_last_10_sec"),
     ),
     AppleJuiceServerSensorDescription(
         key="sended_sources",
@@ -188,6 +188,8 @@ SENSORS_SERVER: tuple[AppleJuiceServerSensorDescription, ...] = [
         name="Message Size",
         icon="mdi:message-text",
         state_class=SensorStateClass.TOTAL,
+        device_class=SensorDeviceClass.DATA_SIZE,
+        unit=UnitOfInformation.BYTES,
         entity_category=EntityCategory.DIAGNOSTIC,
         subscriptions=[("messagesize")],
         value_fn=lambda sensor: sensor.coordinator.data.get("messagesize"),
@@ -242,10 +244,10 @@ SENSORS_NETWORK: tuple[AppleJuiceServerSensorDescription, ...] = [
         key="globalfilesize",
         name="Global File Size",
         icon="mdi:file-document-outline",
-        unit=UnitOfInformation.TERABYTES,
+        unit=UnitOfInformation.BYTES,
         device_class=SensorDeviceClass.DATA_SIZE,
         subscriptions=[("globalfilesize")],
-        value_fn=lambda sensor: round(sensor.coordinator.data.get("globalfilesize") / (1024 ** 4), 2),
+        value_fn=lambda sensor: sensor.coordinator.data.get("globalfilesize"),
     ),
 ]
 

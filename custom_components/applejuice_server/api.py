@@ -4,7 +4,6 @@ import asyncio
 import logging
 import aiohttp
 from homeassistant.core import HomeAssistant
-from typing import Optional
 from homeassistant.helpers import aiohttp_client
 
 _LOGGER = logging.getLogger(__name__)

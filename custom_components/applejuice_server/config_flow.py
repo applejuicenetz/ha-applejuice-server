@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import logging
-from logging import Logger
+import json
+from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
@@ -94,17 +95,19 @@ class AppleJuiceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return True
 
     async def _test_connection(self, host, port, username, password, tls):
-        """Validate the connection by requesting /xml/information.xml."""
+        """Validate the connection by requesting /info.json."""
 
-        xml_data = await get_raw_data(self.hass, host, port, username, password, tls, "/info.xml")
+        info_data = await get_raw_data(self.hass, host, port, username, password, tls, "/info.json")
 
-        if xml_data is None:
+        if info_data is None:
             return False
 
-        if "applejuiceserver" in xml_data:
-            return True
+        try:
+            parsed = json.loads(info_data)
+        except json.JSONDecodeError:
+            return False
 
-        return False
+        return "applejuice_server_health" in parsed
 
     @staticmethod
     @callback

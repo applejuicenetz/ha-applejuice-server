@@ -2,8 +2,7 @@
 
 import asyncio
 import logging
-import re
-import xmltodict
+import json
 from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
@@ -11,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.typing import ConfigType
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from .const import (
     DOMAIN,
     CONF_URL,
@@ -106,7 +105,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
 
 class AppleJuiceCoordinator(DataUpdateCoordinator):
-    """Handles periodic XML data retrieval."""
+    """Handles periodic JSON data retrieval."""
 
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry):
         """Initialize the coordinator with update interval settings."""
@@ -114,8 +113,7 @@ class AppleJuiceCoordinator(DataUpdateCoordinator):
         self.version = None
         self.platforms = []
         self.updaters = [
-            _async_update_info,
-            _async_update_status,
+            _async_update_info_json,
         ]
         self.hass = hass
         self.config_entry = config_entry
@@ -138,90 +136,61 @@ class AppleJuiceCoordinator(DataUpdateCoordinator):
         return combined_data
 
 
-async def _async_update_info(self):
-    """Fetch XML data asynchronously."""
-    infoData = await get_raw_data(self.hass,
-                                  self.config_entry.data.get(CONF_URL),
-                                  self.config_entry.data.get(CONF_PORT),
-                                  self.config_entry.data.get(CONF_USERNAME),
-                                  self.config_entry.data.get(CONF_PASSWORD),
-                                  self.config_entry.data.get(CONF_TLS),
-                                  "/info.xml")
+async def _async_update_info_json(self):
+    """Fetch JSON data asynchronously."""
+    info_data = await get_raw_data(
+        self.hass,
+        self.config_entry.data.get(CONF_URL),
+        self.config_entry.data.get(CONF_PORT),
+        self.config_entry.data.get(CONF_USERNAME),
+        self.config_entry.data.get(CONF_PASSWORD),
+        self.config_entry.data.get(CONF_TLS),
+        "/info.json",
+    )
 
-    parsed_data = xmltodict.parse(infoData)
+    if not info_data:
+        return {}
 
-    applejuiceserver = parsed_data.get("applejuiceserver")
+    try:
+        parsed_data = json.loads(info_data)
+    except json.JSONDecodeError as exc:
+        _LOGGER.error("Failed to decode /info.json: %s", exc)
+        return {}
+
+    def _value(metric_key: str):
+        metric = parsed_data.get(metric_key)
+        if isinstance(metric, dict):
+            return metric.get("value")
+        return None
+
+    def _as_int(metric_key: str):
+        value = _value(metric_key)
+        return int(value) if value is not None else None
+
+    server_health = _as_int("applejuice_server_health")
 
     return {
-        "globaluser": int(applejuiceserver.get("globaluser")) if applejuiceserver is not None else None,
-        "globalfilecount": int(applejuiceserver.get("globalfilecount")) if applejuiceserver is not None else None,
-        "globalfilesize": int(float(applejuiceserver.get("globalfilesize"))) if applejuiceserver is not None else None,
-        "user": int(applejuiceserver.get("user")) if applejuiceserver is not None else None,
-        "filecount": int(applejuiceserver.get("filecount")) if applejuiceserver is not None else None,
-        "filesize": int(float(applejuiceserver.get("filesize"))) if applejuiceserver is not None else None,
+        "globaluser": _as_int("applejuice_global_users"),
+        "globalfilecount": _as_int("applejuice_global_files"),
+        "globalfilesize": _as_int("applejuice_global_file_size_bytes"),
+        "user": _as_int("applejuice_local_users"),
+        "filecount": _as_int("applejuice_local_files"),
+        "filesize": _as_int("applejuice_local_file_size_bytes"),
+        "firewalled": _as_int("applejuice_firewalled_users"),
+        "open_connections": _as_int("applejuice_open_connections"),
+        "memory_used": _as_int("applejuice_memory_used_bytes"),
+        "memory_free": _as_int("applejuice_memory_free_bytes"),
+        "memory_max": _as_int("applejuice_memory_max_bytes"),
+        "upspeed_last_10_sec": _as_int("applejuice_upload_bytes_per_sec"),
+        "downspeed_last_10_sec": _as_int("applejuice_download_bytes_per_sec"),
+        "serverstatus_ok": server_health == 1 if server_health is not None else None,
+        "sended_sources": _as_int("applejuice_sources_sent"),
+        "sended_local_sources": _as_int("applejuice_local_sources_sent"),
+        "sended_searchmessages": _as_int("applejuice_search_messages_sent"),
+        "sended_firewallmessages": _as_int("applejuice_firewall_messages_sent"),
+        "sended_messages": _as_int("applejuice_messages_sent"),
+        "messagesize": _as_int("applejuice_traffic_bytes"),
+        "responded_i_asks": _as_int("applejuice_info_asks_responded"),
+        "searches": _as_int("applejuice_searches_processed"),
+        "open_sockettasks": _as_int("applejuice_socket_tasks_open"),
     }
-
-
-async def _async_update_status(self):
-    """Fetch XML share data asynchronously."""
-    statusData = await get_raw_data(self.hass,
-                                    self.config_entry.data.get(CONF_URL),
-                                    self.config_entry.data.get(CONF_PORT),
-                                    self.config_entry.data.get(CONF_USERNAME),
-                                    self.config_entry.data.get(CONF_PASSWORD),
-                                    self.config_entry.data.get(CONF_TLS),
-                                    "/status_raw.htm")
-
-    parsedData = {}
-
-    firewalled = re.compile(r'users \((\d+) firewalled\) share').search(statusData)
-    parsedData['firewalled'] = int(firewalled.group(1)) if firewalled else None
-
-    open_connections = re.compile(r'open connections: (\d+)').search(statusData)
-    parsedData['open_connections'] = int(open_connections.group(1)) if open_connections else None
-
-    memory_used = re.compile(r'used: (\d+) ').search(statusData)
-    parsedData['memory_used'] = int(memory_used.group(1)) if memory_used else None
-
-    memory_free = re.compile(r'free: (\d+) ').search(statusData)
-    parsedData['memory_free'] = int(memory_free.group(1)) if memory_free else None
-
-    memory_max = re.compile(r'max : (\d+) ').search(statusData)
-    parsedData['memory_max'] = int(memory_max.group(1)) if memory_max else None
-
-    upspeed_last_10_sec = re.compile(r'upspeed last 10 sec: (\d+\.\d+) ').search(statusData)
-    parsedData['upspeed_last_10_sec'] = float(upspeed_last_10_sec.group(1)) if upspeed_last_10_sec else None
-
-    downspeed_last_10_sec = re.compile(r'downspeed last 10 sec: (\d+\.\d+) ').search(statusData)
-    parsedData['downspeed_last_10_sec'] = float(downspeed_last_10_sec.group(1)) if downspeed_last_10_sec else None
-
-    parsedData['serverstatus_ok'] = ">ok<" in statusData
-
-    sended_sources = re.compile(r'sended sources: (\d+)').search(statusData)
-    parsedData['sended_sources'] = int(sended_sources.group(1)) if sended_sources else None
-
-    sended_local_sources = re.compile(r'sended local sources: (\d+)').search(statusData)
-    parsedData['sended_local_sources'] = int(sended_local_sources.group(1)) if sended_local_sources else None
-
-    sended_searchmessages = re.compile(r'sended searchmessages: (\d+)').search(statusData)
-    parsedData['sended_searchmessages'] = int(sended_searchmessages.group(1)) if sended_searchmessages else None
-
-    sended_firewallmessages = re.compile(r'sended firewallmessages: (\d+)').search(statusData)
-    parsedData['sended_firewallmessages'] = int(sended_firewallmessages.group(1)) if sended_firewallmessages else None
-
-    sended_messages = re.compile(r'sended messages: (\d+)').search(statusData)
-    parsedData['sended_messages'] = int(sended_messages.group(1)) if sended_messages else None
-
-    messagesize = re.compile(r'messagesize: (\d+)').search(statusData)
-    parsedData['messagesize'] = int(messagesize.group(1)) if messagesize else None
-
-    responded_i_asks = re.compile(r'responded i-asks: (\d+)').search(statusData)
-    parsedData['responded_i_asks'] = int(responded_i_asks.group(1)) if responded_i_asks else None
-
-    searches = re.compile(r'searches: (\d+)').search(statusData)
-    parsedData['searches'] = int(searches.group(1)) if searches else None
-
-    open_sockettasks = re.compile(r'open sockettasks: (\d+)').search(statusData)
-    parsedData['open_sockettasks'] = int(open_sockettasks.group(1)) if open_sockettasks else None
-
-    return parsedData
