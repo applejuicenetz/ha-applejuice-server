@@ -1,0 +1,44 @@
+name: applejuice-ha-server-test
+
+# Home Assistant gegen den vorhandenen Test-Server `server-a` aus isolated-network/
+# (198.51.100.11:8001, Login aj / aj). isolated-network muss laufen.
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    pull_policy: never
+    restart: "no"
+    ports:
+      - "127.0.0.1:8125:8123"
+    volumes:
+      - ha-config:/config
+      - ./configuration.yaml:/config/configuration.yaml:ro
+      - ../custom_components/applejuice_server:/config/custom_components/applejuice_server:ro
+    networks:
+      default: {}
+      isolated:
+        ipv4_address: 198.51.100.33
+
+  homeassistant-beta:
+    profiles: ["beta"]
+    image: ghcr.io/home-assistant/home-assistant:beta
+    pull_policy: never
+    restart: "no"
+    ports:
+      - "127.0.0.1:8126:8123"
+    volumes:
+      - ha-config-beta:/config
+      - ./configuration.yaml:/config/configuration.yaml:ro
+      - ../custom_components/applejuice_server:/config/custom_components/applejuice_server:ro
+    networks:
+      default: {}
+      isolated:
+        ipv4_address: 198.51.100.34
+
+volumes:
+  ha-config:
+  ha-config-beta:
+
+networks:
+  isolated:
+    external: true
+    name: applejuice-isolated_isolated

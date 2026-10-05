@@ -36,6 +36,15 @@ Diese Integration kannst du nur verwenden, wenn du einen appleJuice Server betre
 
 10. Gib `Host/IP`, `Web-Port`, `Username` und `Passwort` ein und klicke auf `OK`
 
+Voraussetzung: Home Assistant 2025.8.0 oder neuer. Zugangsdaten, Host und Port lassen sich über `Neu konfigurieren` ändern. Werden die Zugangsdaten abgelehnt, startet Home Assistant die erneute Authentifizierung.
+
+## Tests
+
+```bash
+pip install -r requirements_test.txt
+pytest
+```
+
 ## debugging
 
 in der `configuration.yaml` kannst du das Logging-Level für die `appleJuice Server` Integration anpassen:
