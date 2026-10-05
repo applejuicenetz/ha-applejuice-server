@@ -1,14 +1,8 @@
-import logging
+"""Sensor platform for the appleJuice Server integration."""
+
+from __future__ import annotations
+
 from dataclasses import dataclass
-from collections.abc import Callable
-
-from homeassistant.const import (
-    EntityCategory,
-    UnitOfInformation,
-    UnitOfDataRate,
-)
-
-from homeassistant.core import callback
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -16,296 +10,237 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
+from homeassistant.const import EntityCategory, UnitOfDataRate, UnitOfInformation
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import DOMAIN
-from .entity import BaseAppleJuiceServerEntity, BaseAppleJuiceNetworkEntity
+from .coordinator import AppleJuiceConfigEntry
+from .entity import AppleJuiceNetworkEntity, AppleJuiceServerEntity
 
-_LOGGER = logging.getLogger(__name__)
-
-
-@dataclass
-class AppleJuiceServerSensorDescription(SensorEntityDescription):
-    """Class describing appleJuice Server sensor entities."""
-
-    key: str
-    name: str
-    value_fn: Callable | None = None
-    sensor_name: str | None = None
-    icon: str | None = None
-    unit: str | None = None
-    state_class: str | None = None
-    device_class: str | None = None
-    subscriptions: list | None = None
-    entity_category: str | None = None
+PARALLEL_UPDATES = 0
 
 
-SENSORS_SERVER: tuple[AppleJuiceServerSensorDescription, ...] = [
-    AppleJuiceServerSensorDescription(
+@dataclass(frozen=True, kw_only=True)
+class AppleJuiceSensorDescription(SensorEntityDescription):
+    """Describes an appleJuice Server sensor."""
+
+    data_key: str
+
+
+SENSORS_SERVER: tuple[AppleJuiceSensorDescription, ...] = (
+    AppleJuiceSensorDescription(
         key="users",
         name="Users",
         icon="mdi:account-group",
-        state_class=SensorStateClass.TOTAL,
-        subscriptions=[("user")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("user"),
+        state_class=SensorStateClass.MEASUREMENT,
+        data_key="user",
     ),
-    AppleJuiceServerSensorDescription(
+    AppleJuiceSensorDescription(
         key="users_firewalled",
         name="Users Firewalled",
         icon="mdi:account-off",
-        state_class=SensorStateClass.TOTAL,
-        subscriptions=[("firewalled")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("firewalled"),
+        state_class=SensorStateClass.MEASUREMENT,
+        data_key="firewalled",
     ),
-    AppleJuiceServerSensorDescription(
+    AppleJuiceSensorDescription(
         key="filecount",
         name="File Count",
         icon="mdi:folder-file-outline",
-        state_class=SensorStateClass.TOTAL,
-        subscriptions=[("filecount")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("filecount"),
+        state_class=SensorStateClass.MEASUREMENT,
+        data_key="filecount",
     ),
-    AppleJuiceServerSensorDescription(
+    AppleJuiceSensorDescription(
         key="filesize",
         name="File Size",
         icon="mdi:file-chart",
-        state_class=SensorStateClass.TOTAL,
+        state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DATA_SIZE,
-        unit=UnitOfInformation.BYTES,
-        subscriptions=[("filesize")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("filesize"),
+        native_unit_of_measurement=UnitOfInformation.BYTES,
+        data_key="filesize",
     ),
-    AppleJuiceServerSensorDescription(
+    AppleJuiceSensorDescription(
         key="open_connections",
         name="Open Connections",
         icon="mdi:connection",
         state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorStateClass.TOTAL,
-        subscriptions=[("open_connections")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("open_connections"),
+        data_key="open_connections",
     ),
-    AppleJuiceServerSensorDescription(
+    AppleJuiceSensorDescription(
         key="memory used",
         name="Memory Used",
         icon="mdi:memory",
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DATA_SIZE,
-        unit=UnitOfInformation.BYTES,
+        native_unit_of_measurement=UnitOfInformation.BYTES,
         entity_category=EntityCategory.DIAGNOSTIC,
-        subscriptions=[("memory_used")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("memory_used"),
+        data_key="memory_used",
     ),
-    AppleJuiceServerSensorDescription(
+    AppleJuiceSensorDescription(
         key="memory_free",
         name="Memory Free",
         icon="mdi:memory",
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DATA_SIZE,
-        unit=UnitOfInformation.BYTES,
+        native_unit_of_measurement=UnitOfInformation.BYTES,
         entity_category=EntityCategory.DIAGNOSTIC,
-        subscriptions=[("memory_free")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("memory_free"),
+        data_key="memory_free",
     ),
-    AppleJuiceServerSensorDescription(
+    AppleJuiceSensorDescription(
         key="memory max",
         name="Memory Max",
         icon="mdi:memory",
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DATA_SIZE,
-        unit=UnitOfInformation.BYTES,
+        native_unit_of_measurement=UnitOfInformation.BYTES,
         entity_category=EntityCategory.DIAGNOSTIC,
-        subscriptions=[("memory_max")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("memory_max"),
+        data_key="memory_max",
     ),
-    AppleJuiceServerSensorDescription(
+    AppleJuiceSensorDescription(
         key="upspeed_last_10_sec",
         name="Upload Speed Last 10 Sec",
         icon="mdi:upload-network",
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DATA_RATE,
-        unit=UnitOfDataRate.BYTES_PER_SECOND,
+        native_unit_of_measurement=UnitOfDataRate.BYTES_PER_SECOND,
         entity_category=EntityCategory.DIAGNOSTIC,
-        subscriptions=[("upspeed_last_10_sec")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("upspeed_last_10_sec"),
+        data_key="upspeed_last_10_sec",
     ),
-    AppleJuiceServerSensorDescription(
+    AppleJuiceSensorDescription(
         key="downspeed_last_10_sec",
         name="Download Speed Last 10 Sec",
         icon="mdi:download-network",
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DATA_RATE,
-        unit=UnitOfDataRate.BYTES_PER_SECOND,
+        native_unit_of_measurement=UnitOfDataRate.BYTES_PER_SECOND,
         entity_category=EntityCategory.DIAGNOSTIC,
-        subscriptions=[("downspeed_last_10_sec")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("downspeed_last_10_sec"),
+        data_key="downspeed_last_10_sec",
     ),
-    AppleJuiceServerSensorDescription(
+    AppleJuiceSensorDescription(
         key="sended_sources",
         name="Sended Sources",
         icon="mdi:source-branch",
-        state_class=SensorStateClass.TOTAL,
+        state_class=SensorStateClass.TOTAL_INCREASING,
         entity_category=EntityCategory.DIAGNOSTIC,
-        subscriptions=[("sended_sources")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("sended_sources"),
+        data_key="sended_sources",
     ),
-    AppleJuiceServerSensorDescription(
+    AppleJuiceSensorDescription(
         key="sended_local_sources",
         name="Sended Local Sources",
         icon="mdi:source-branch",
-        state_class=SensorStateClass.TOTAL,
+        state_class=SensorStateClass.TOTAL_INCREASING,
         entity_category=EntityCategory.DIAGNOSTIC,
-        subscriptions=[("sended_local_sources")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("sended_local_sources"),
+        data_key="sended_local_sources",
     ),
-    AppleJuiceServerSensorDescription(
+    AppleJuiceSensorDescription(
         key="sended_searchmessages",
         name="Sended Search Messages",
         icon="mdi:comment-search",
-        state_class=SensorStateClass.TOTAL,
+        state_class=SensorStateClass.TOTAL_INCREASING,
         entity_category=EntityCategory.DIAGNOSTIC,
-        subscriptions=[("sended_searchmessages")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("sended_searchmessages"),
+        data_key="sended_searchmessages",
     ),
-    AppleJuiceServerSensorDescription(
+    AppleJuiceSensorDescription(
         key="sended_firewallmessages",
         name="Sended Firewall Messages",
         icon="mdi:message-alert",
-        state_class=SensorStateClass.TOTAL,
+        state_class=SensorStateClass.TOTAL_INCREASING,
         entity_category=EntityCategory.DIAGNOSTIC,
-        subscriptions=[("sended_firewallmessages")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("sended_firewallmessages"),
+        data_key="sended_firewallmessages",
     ),
-    AppleJuiceServerSensorDescription(
+    AppleJuiceSensorDescription(
         key="sended_messages",
         name="Sended Messages",
         icon="mdi:message",
-        state_class=SensorStateClass.TOTAL,
+        state_class=SensorStateClass.TOTAL_INCREASING,
         entity_category=EntityCategory.DIAGNOSTIC,
-        subscriptions=[("sended_messages")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("sended_messages"),
+        data_key="sended_messages",
     ),
-    AppleJuiceServerSensorDescription(
+    AppleJuiceSensorDescription(
         key="messagesize",
         name="Message Size",
         icon="mdi:message-text",
-        state_class=SensorStateClass.TOTAL,
+        state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.DATA_SIZE,
-        unit=UnitOfInformation.BYTES,
+        native_unit_of_measurement=UnitOfInformation.BYTES,
         entity_category=EntityCategory.DIAGNOSTIC,
-        subscriptions=[("messagesize")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("messagesize"),
+        data_key="messagesize",
     ),
-    AppleJuiceServerSensorDescription(
+    AppleJuiceSensorDescription(
         key="responded_i_asks",
         name="Responded I-Asks",
         icon="mdi:message-reply",
-        state_class=SensorStateClass.TOTAL,
+        state_class=SensorStateClass.TOTAL_INCREASING,
         entity_category=EntityCategory.DIAGNOSTIC,
-        subscriptions=[("responded_i_asks")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("responded_i_asks"),
+        data_key="responded_i_asks",
     ),
-    AppleJuiceServerSensorDescription(
+    AppleJuiceSensorDescription(
         key="searches",
         name="Searches",
         icon="mdi:magnify",
-        state_class=SensorStateClass.TOTAL,
+        state_class=SensorStateClass.TOTAL_INCREASING,
         entity_category=EntityCategory.DIAGNOSTIC,
-        subscriptions=[("searches")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("searches"),
+        data_key="searches",
     ),
-    AppleJuiceServerSensorDescription(
+    AppleJuiceSensorDescription(
         key="open_sockettasks",
         name="Open Socket Tasks",
         icon="mdi:transit-connection-variant",
-        state_class=SensorStateClass.TOTAL,
+        state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
-        subscriptions=[("open_sockettasks")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("open_sockettasks"),
-    )
-]
+        data_key="open_sockettasks",
+    ),
+)
 
-SENSORS_NETWORK: tuple[AppleJuiceServerSensorDescription, ...] = [
-    AppleJuiceServerSensorDescription(
+SENSORS_NETWORK: tuple[AppleJuiceSensorDescription, ...] = (
+    AppleJuiceSensorDescription(
         key="globaluser",
         name="Global Users",
         icon="mdi:account-group",
-        state_class=SensorStateClass.TOTAL,
-        subscriptions=[("globaluser")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("globaluser"),
+        state_class=SensorStateClass.MEASUREMENT,
+        data_key="globaluser",
     ),
-    AppleJuiceServerSensorDescription(
+    AppleJuiceSensorDescription(
         key="globalfilecount",
         name="Global File Count",
         icon="mdi:file-document",
-        state_class=SensorStateClass.TOTAL,
-        subscriptions=[("globalfilecount")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("globalfilecount"),
+        state_class=SensorStateClass.MEASUREMENT,
+        data_key="globalfilecount",
     ),
-    AppleJuiceServerSensorDescription(
+    AppleJuiceSensorDescription(
         key="globalfilesize",
         name="Global File Size",
         icon="mdi:file-document-outline",
-        unit=UnitOfInformation.BYTES,
+        state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DATA_SIZE,
-        subscriptions=[("globalfilesize")],
-        value_fn=lambda sensor: sensor.coordinator.data.get("globalfilesize"),
+        native_unit_of_measurement=UnitOfInformation.BYTES,
+        data_key="globalfilesize",
     ),
-]
+)
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
-    """Set sensor platform."""
-    coordinator = hass.data[DOMAIN][entry.entry_id]
+class AppleJuiceServerSensor(AppleJuiceServerEntity, SensorEntity):
+    """Sensor of the Server device."""
 
-    await async_setup_basic_sensor(coordinator, entry, async_add_entities)
+    entity_description: AppleJuiceSensorDescription
+
+    @property
+    def native_value(self) -> int | None:
+        """Current value."""
+        return self.coordinator.data.get(self.entity_description.data_key)
 
 
-async def async_setup_basic_sensor(coordinator, entry, async_add_entities):
-    """Set basic sensor platform."""
+class AppleJuiceNetworkSensor(AppleJuiceNetworkEntity, AppleJuiceServerSensor):
+    """Sensor of the Network device."""
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: AppleJuiceConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+) -> None:
+    """Set up sensor platform."""
+    coordinator = entry.runtime_data
     async_add_entities(
-        [AppleJuiceServerSensor(coordinator, entry, desc) for desc in SENSORS_SERVER] +
-        [AppleJuiceNetworkSensor(coordinator, entry, desc) for desc in SENSORS_NETWORK]
+        [AppleJuiceServerSensor(coordinator, desc) for desc in SENSORS_SERVER]
+        + [AppleJuiceNetworkSensor(coordinator, desc) for desc in SENSORS_NETWORK]
     )
-
-
-class AppleJuiceServerSensor(BaseAppleJuiceServerEntity, SensorEntity):
-    """AppleJuiceServerSensor Sensor class."""
-
-    def __init__(self, coordinator, entry, description):
-        """Init."""
-        super().__init__(coordinator, entry)
-        self.coordinator = coordinator
-        self._attr_unique_id = f"{entry.entry_id}_{description.key}"
-        self._attr_name = description.name
-        self._attr_has_entity_name = True
-        self.entity_description = description
-        self._attr_native_value = description.value_fn(self)
-        self._attr_icon = description.icon
-        self._attr_native_unit_of_measurement = description.unit
-
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        """Handle updated data from the coordinator."""
-        self._attr_native_value = self.entity_description.value_fn(self)
-        self.async_write_ha_state()
-
-
-class AppleJuiceNetworkSensor(BaseAppleJuiceNetworkEntity, SensorEntity):
-    """AppleJuiceNetworkSensor Sensor class."""
-
-    def __init__(self, coordinator, entry, description):
-        """Init."""
-        super().__init__(coordinator, entry)
-        self.coordinator = coordinator
-        self._attr_unique_id = f"{entry.entry_id}_{description.key}"
-        self._attr_name = description.name
-        self._attr_has_entity_name = True
-        self.entity_description = description
-        self._attr_native_value = description.value_fn(self)
-        self._attr_icon = description.icon
-        self._attr_native_unit_of_measurement = description.unit
-
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        """Handle updated data from the coordinator."""
-        self._attr_native_value = self.entity_description.value_fn(self)
-        self.async_write_ha_state()

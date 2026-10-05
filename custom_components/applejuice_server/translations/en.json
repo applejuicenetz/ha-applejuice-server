@@ -6,6 +6,26 @@
         "data": {
           "url": "Host/IP",
           "port": "HTTP-Port",
+          "username": "Username",
+          "password": "Password",
+          "tls": "Uses TLS (if reverse proxy is in use)"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reauthenticate",
+        "description": "The credentials for {host} were rejected. Enter the current username and password.",
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        }
+      },
+      "reconfigure": {
+        "description": "Change the connection to the appleJuice Server",
+        "data": {
+          "url": "Host/IP",
+          "port": "HTTP-Port",
+          "username": "Username",
+          "password": "Password",
           "tls": "Uses TLS (if reverse proxy is in use)"
         }
       }
@@ -13,7 +33,14 @@
     "error": {
       "host_error": "Invalid host. Don't include \"http://\", \"https://\", or a trailing slash.",
       "port_error": "Invalid port, must be a number between 1 and 65535.",
-      "core_connection_error": "Failed to connect."
+      "core_connection_error": "Failed to connect.",
+      "invalid_auth": "Invalid username or password."
+    },
+    "abort": {
+      "already_configured": "This server is already configured.",
+      "reauth_successful": "Reauthentication successful.",
+      "reconfigure_successful": "Connection updated.",
+      "wrong_server": "Host and port must not point to a different server."
     }
   },
   "options": {
@@ -24,6 +51,14 @@
           "polling_rate": "Integration polling rate (s)"
         }
       }
+    }
+  },
+  "exceptions": {
+    "cannot_connect": {
+      "message": "Cannot connect to the appleJuice Server."
+    },
+    "invalid_auth": {
+      "message": "The appleJuice Server rejected the credentials."
     }
   }
 }

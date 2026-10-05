@@ -1,31 +1,67 @@
-"""appleJuice Server."""
+"""appleJuice Server /info.json client."""
+
+from __future__ import annotations
 
 import asyncio
+import json
 import logging
+from typing import Any
+
 import aiohttp
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers import aiohttp_client
+
+from .const import TIMEOUT
 
 _LOGGER = logging.getLogger(__name__)
 
 
-async def get_raw_data(hass: HomeAssistant, url: str, port: int, username: str, password: str, tls: bool, endpoint: str):
-    """Fetch RAW data asynchronously using aiohttp."""
+class AppleJuiceError(Exception):
+    """Base error of the appleJuice Server client."""
 
-    session = aiohttp_client.async_get_clientsession(hass)
 
-    try:
-        protocol = "https" if tls else "http"
-        full_url = f"{protocol}://{url}:{port}{endpoint}"
+class AppleJuiceConnectionError(AppleJuiceError):
+    """Server is not reachable or returned an invalid answer."""
 
-        _LOGGER.debug("call url: %s", full_url)
 
-        async with asyncio.timeout(10):
-            async with session.get(full_url, auth=aiohttp.BasicAuth(username, password)) as response:
-                response.raise_for_status()
-                return await response.text()
+class AppleJuiceAuthError(AppleJuiceError):
+    """Server rejected the credentials."""
 
-    except aiohttp.ClientError as e:
-        _LOGGER.error("Error while fetching RAW data: %s", e)
 
-    return None
+class AppleJuiceClient:
+    """Small async client for the server's /info.json."""
+
+    def __init__(
+        self,
+        session: aiohttp.ClientSession,
+        host: str,
+        port: int,
+        username: str,
+        password: str,
+        tls: bool,
+    ) -> None:
+        """Initialize the client."""
+        self._session = session
+        self._base = f"{'https' if tls else 'http'}://{host}:{port}"
+        self._auth = aiohttp.BasicAuth(username, password)
+
+    async def get_info(self) -> dict[str, Any]:
+        """Fetch /info.json and return the parsed document."""
+        _LOGGER.debug("GET %s/info.json", self._base)
+        try:
+            async with asyncio.timeout(TIMEOUT):
+                async with self._session.get(f"{self._base}/info.json", auth=self._auth) as response:
+                    if response.status in (401, 403):
+                        raise AppleJuiceAuthError("invalid credentials")
+                    response.raise_for_status()
+                    text = await response.text()
+        except TimeoutError as err:
+            raise AppleJuiceConnectionError("timeout") from err
+        except aiohttp.ClientError as err:
+            raise AppleJuiceConnectionError(str(err)) from err
+
+        try:
+            parsed = json.loads(text)
+        except json.JSONDecodeError as err:
+            raise AppleJuiceConnectionError("invalid JSON from /info.json") from err
+        if not isinstance(parsed, dict):
+            raise AppleJuiceConnectionError("unexpected /info.json format")
+        return parsed
