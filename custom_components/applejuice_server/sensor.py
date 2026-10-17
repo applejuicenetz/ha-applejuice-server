@@ -156,16 +156,6 @@ SENSORS_SERVER: tuple[AppleJuiceSensorDescription, ...] = (
         data_key="sended_messages",
     ),
     AppleJuiceSensorDescription(
-        key="messagesize",
-        name="Message Size",
-        icon="mdi:message-text",
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        device_class=SensorDeviceClass.DATA_SIZE,
-        native_unit_of_measurement=UnitOfInformation.BYTES,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        data_key="messagesize",
-    ),
-    AppleJuiceSensorDescription(
         key="responded_i_asks",
         name="Responded I-Asks",
         icon="mdi:message-reply",

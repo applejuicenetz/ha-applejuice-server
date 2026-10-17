@@ -38,7 +38,6 @@ METRICS: dict[str, str] = {
     "sended_searchmessages": "applejuice_search_messages_sent",
     "sended_firewallmessages": "applejuice_firewall_messages_sent",
     "sended_messages": "applejuice_messages_sent",
-    "messagesize": "applejuice_traffic_bytes",
     "responded_i_asks": "applejuice_info_asks_responded",
     "searches": "applejuice_searches_processed",
     "open_sockettasks": "applejuice_socket_tasks_open",
