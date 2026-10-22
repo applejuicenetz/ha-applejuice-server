@@ -10,7 +10,7 @@ Home-Assistant-Integration für den appleJuice Server (`custom_components/applej
 - Plattformen: `sensor`, `binary_sensor`. Daten liegen in `entry.runtime_data`, kein `hass.data`.
 - Server- und Network-Device werden in `__init__.py` registriert. Network hängt über `via_device_id` am Server; `via_device` in `DeviceInfo` ist deprecated.
 - Der Binary Sensor `Server Status` ist `PROBLEM`: an, wenn der Server meldet, dass er voll ist (`health != 1`).
-- Entity-Keys `memory used` und `memory max` enthalten ein Leerzeichen. Sie bleiben so, weil die Unique-IDs bestehender Installationen daran hängen.
+- Entity-Keys und Namen folgen den Bezeichnungen der ajserver-Web-UI (Serverwatcher). Keys wurden einmalig ohne Migration umbenannt (wenige Installationen); alte Entities bleiben verwaist und müssen gelöscht werden. Künftig Unique-IDs nur mit Migration ändern.
 
 ## Tests
 

@@ -64,10 +64,10 @@ async def test_setup_states_and_devices(hass: HomeAssistant, aioclient_mock) -> 
     await setup(hass, entry)
     assert entry.state is ConfigEntryState.LOADED
 
-    assert hass.states.get(eid(hass, "sensor", "users", entry)).state == "103"
-    assert hass.states.get(eid(hass, "sensor", "globaluser", entry)).state == "447"
-    assert hass.states.get(eid(hass, "sensor", "open_connections", entry)).state == "106"
-    assert hass.states.get(eid(hass, "sensor", "memory used", entry)).state == "258189848"
+    assert hass.states.get(eid(hass, "sensor", "cores", entry)).state == "103"
+    assert hass.states.get(eid(hass, "sensor", "network_cores", entry)).state == "447"
+    assert hass.states.get(eid(hass, "sensor", "connections", entry)).state == "106"
+    assert hass.states.get(eid(hass, "sensor", "memory_used", entry)).state == "258189848"
     # nicht gelieferte Metriken -> unknown statt Fehler
     assert hass.states.get(eid(hass, "sensor", "searches", entry)).state == "unknown"
     assert hass.states.get(eid(hass, "binary_sensor", "serverstatus_ok", entry)).state == "off"
